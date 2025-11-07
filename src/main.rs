@@ -7,8 +7,9 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use crate::config::environment::Environment;
 use crate::infrastructure::db::init_pool;
-use crate::routes::auth_routes;
+use crate::routes::{auth_routes, chat_routes};
 use crate::utils::logger::init_logger;
+use crate::modules::chat::server::ChatState;
 
 mod config;
 mod infrastructure;
@@ -29,8 +30,12 @@ async fn main() {
     // Skip migrations for external database to avoid schema conflicts
     info!("Skipping migrations for external database - using existing schema");
 
+    // Initialize chat state
+    let chat_state = ChatState::new();
+
     let app = Router::new()
         .merge(auth_routes())
+        .merge(chat_routes(chat_state))
         .merge(SwaggerUi::new("/swagger-ui/").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .with_state(pool);
 

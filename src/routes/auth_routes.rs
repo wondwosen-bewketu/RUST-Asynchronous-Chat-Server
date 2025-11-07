@@ -23,12 +23,14 @@ use utoipa::OpenApi;
         get_me,
         refresh_token,
         change_password,
+        chat_websocket,
     ),
     components(
         schemas(RegisterDto, LoginDto, TokenResponse, RefreshTokenDto, ChangePasswordDto, UserResponse, ErrorResponse)
     ),
     tags(
-        (name = "auth", description = "Authentication management endpoints")
+        (name = "Authentication", description = "User authentication and management endpoints"),
+        (name = "Chat", description = "Real-time chat endpoints")
     )
 )]
 pub struct ApiDoc;
@@ -43,7 +45,8 @@ pub struct ApiDoc;
         (status = 400, description = "Invalid input", body = ErrorResponse),
         (status = 409, description = "User already exists", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse),
-    )
+    ),
+    tag = "Authentication"
 )]
 pub async fn register(
     State(pool): State<Pool<Postgres>>,
@@ -80,7 +83,8 @@ pub async fn register(
         (status = 200, description = "Login successful", body = TokenResponse),
         (status = 401, description = "Invalid credentials", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse),
-    )
+    ),
+    tag = "Authentication"
 )]
 pub async fn login(
     State(pool): State<Pool<Postgres>>,
@@ -118,7 +122,8 @@ pub async fn login(
         (status = 200, description = "User profile retrieved successfully", body = UserResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse),
-    )
+    ),
+    tag = "Authentication"
 )]
 pub async fn get_me(
     State(pool): State<Pool<Postgres>>,
@@ -169,7 +174,8 @@ pub async fn get_me(
         (status = 200, description = "Token refreshed successfully", body = TokenResponse),
         (status = 401, description = "Invalid refresh token", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse),
-    )
+    ),
+    tag = "Authentication"
 )]
 pub async fn refresh_token(
     State(pool): State<Pool<Postgres>>,
@@ -204,7 +210,8 @@ pub async fn refresh_token(
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 400, description = "Invalid input", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse),
-    )
+    ),
+    tag = "Authentication"
 )]
 pub async fn change_password(
     State(pool): State<Pool<Postgres>>,
@@ -247,6 +254,89 @@ pub async fn change_password(
         }
     }
 }
+
+/// WebSocket Chat Endpoint
+/// 
+/// Connect to the real-time chat server using WebSocket protocol.
+/// 
+/// Authentication is required using a valid JWT token.
+/// 
+/// You can provide the token in either:
+/// 1. Query parameter: `?token=YOUR_JWT_TOKEN`
+/// 2. Authorization header: `Authorization: Bearer YOUR_JWT_TOKEN`
+/// 
+/// You can also specify a room to join:
+/// `?token=YOUR_JWT_TOKEN&room=room_name`
+/// 
+/// If no room is specified, you will join the default "general" room.
+/// 
+/// # WebSocket Communication
+/// 
+/// Once connected, you can send and receive messages:
+/// 
+/// ## Sending Messages
+/// Simply send text messages through the WebSocket connection:
+/// ```
+/// Hello everyone!
+/// ```
+/// 
+/// ## Receiving Messages
+/// 
+/// Messages are received in two formats:
+/// 
+/// 1. User Messages:
+/// ```json
+/// {
+///   "user_id": "user-uuid",
+///   "username": "User_xxxxxxxx",
+///   "message": "Hello everyone!",
+///   "timestamp": 1234567890
+/// }
+/// ```
+/// 
+/// 2. System Messages (prefixed with "system:"):
+/// ```json
+/// system:{"message":"User_xxxxxxxx has joined the chat.","timestamp":1234567890}
+/// ```
+/// 
+/// # Authentication
+/// 
+/// All connections require a valid JWT token obtained through the authentication endpoints.
+/// 
+/// # Examples
+/// 
+/// JavaScript example:
+/// ```javascript
+/// const token = "YOUR_JWT_TOKEN";
+/// const ws = new WebSocket(`ws://localhost:3005/ws?token=${token}`);
+/// 
+/// ws.onopen = () => {
+///   console.log("Connected to chat server");
+///   ws.send("Hello everyone!");
+/// };
+/// 
+/// ws.onmessage = (event) => {
+///   console.log("Received:", event.data);
+/// };
+/// ```
+#[utoipa::path(
+    get,
+    path = "/ws",
+    responses(
+        (status = 101, description = "Switching to WebSocket protocol"),
+        (status = 401, description = "Unauthorized - Invalid or missing JWT token"),
+        (status = 404, description = "Not Found - WebSocket endpoint not found"),
+    ),
+    params(
+        ("token" = String, Query, description = "JWT token for authentication (optional if provided in Authorization header)"),
+        ("room" = String, Query, description = "Room name to join (optional, defaults to 'general')"),
+    ),
+    security(
+        ("Authorization" = [])
+    ),
+    tag = "Chat"
+)]
+pub async fn chat_websocket() {}
 
 /// Configure authentication routes
 pub fn auth_routes() -> Router<Pool<Postgres>> {

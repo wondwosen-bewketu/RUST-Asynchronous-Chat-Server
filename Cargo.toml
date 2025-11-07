@@ -2,9 +2,10 @@
 name = "rust-axum-project"
 version = "0.1.0"
 edition = "2021"
+default-run = "rust-axum-project"
 
 [dependencies]
-axum = { version = "0.6", features = ["json"] }
+axum = { version = "0.6", features = ["json", "ws", "headers"] }
 tokio = { version = "1.28", features = ["full"] }
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "migrate", "uuid", "time"] }
 serde = { version = "1", features = ["derive"] }
@@ -19,3 +20,6 @@ bcrypt = "0.15"
 jsonwebtoken = "9.0"
 utoipa = { version = "4", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "4", features = ["axum"] }
+futures = "0.3"
+tokio-tungstenite = "0.20"
+headers = "0.3"
