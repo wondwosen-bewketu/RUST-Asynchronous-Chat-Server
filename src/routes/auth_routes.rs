@@ -24,13 +24,15 @@ use utoipa::OpenApi;
         refresh_token,
         change_password,
         chat_websocket,
+        crate::routes::file_routes::scan_files,
     ),
     components(
-        schemas(RegisterDto, LoginDto, TokenResponse, RefreshTokenDto, ChangePasswordDto, UserResponse, ErrorResponse)
+        schemas(RegisterDto, LoginDto, TokenResponse, RefreshTokenDto, ChangePasswordDto, UserResponse, ErrorResponse, crate::routes::file_routes::ScanRequest, crate::routes::file_routes::ScanResponse)
     ),
     tags(
         (name = "Authentication", description = "User authentication and management endpoints"),
-        (name = "Chat", description = "Real-time chat endpoints")
+        (name = "Chat", description = "Real-time chat endpoints"),
+        (name = "File Management", description = "File indexing and duplicate detection endpoints")
     )
 )]
 pub struct ApiDoc;

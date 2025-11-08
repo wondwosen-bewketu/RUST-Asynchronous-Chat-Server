@@ -7,7 +7,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use crate::config::environment::Environment;
 use crate::infrastructure::db::init_pool;
-use crate::routes::{auth_routes, chat_routes};
+use crate::routes::{auth_routes, chat_routes, file_routes};
 use crate::utils::logger::init_logger;
 use crate::modules::chat::server::ChatState;
 
@@ -36,6 +36,7 @@ async fn main() {
     let app = Router::new()
         .merge(auth_routes())
         .merge(chat_routes(chat_state))
+        .merge(file_routes())
         .merge(SwaggerUi::new("/swagger-ui/").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .with_state(pool);
 

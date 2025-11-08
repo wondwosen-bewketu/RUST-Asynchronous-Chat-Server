@@ -1432,6 +1432,7 @@ dependencies = [
  "jsonwebtoken",
  "serde",
  "serde_json",
+ "sha2",
  "sqlx",
  "time",
  "tokio",

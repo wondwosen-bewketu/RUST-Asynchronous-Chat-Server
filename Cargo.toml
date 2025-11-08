@@ -23,3 +23,4 @@ utoipa-swagger-ui = { version = "4", features = ["axum"] }
 futures = "0.3"
 tokio-tungstenite = "0.20"
 headers = "0.3"
+sha2 = "0.10"

@@ -1,7 +1,7 @@
 use futures::{SinkExt, StreamExt};
-use rust_axum_project::modules::chat::client::{connect_to_chat_server, send_message};
 use std::env;
-use tokio_tungstenite::tungstenite::protocol::Message as TungsteniteMessage;
+use tokio_tungstenite::{connect_async, tungstenite::protocol::Message as TungsteniteMessage};
+use url::Url;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -10,19 +10,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     if args.len() < 3 {
         eprintln!("Usage: {} <server_url> <jwt_token> [room]", args[0]);
+        eprintln!("Example: {} http://localhost:3005 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... [general]", args[0]);
         std::process::exit(1);
     }
     
     let server_url = &args[1];
     let jwt_token = &args[2];
-    let room = args.get(3).map(|s| s.as_str());
+    let room = args.get(3).map(|s| s.as_str()).unwrap_or("general");
     
-    println!("Connecting to chat server at {}...", server_url);
+    // Construct the WebSocket URL with query parameters
+    let ws_url = format!(
+        "{}/ws?token={}&room={}",
+        server_url.replace("http://", "ws://").replace("https://", "wss://"),
+        jwt_token,
+        room
+    );
+
+    println!("Connecting to chat server at {}...", ws_url);
     
-    // Connect to the chat server
-    let (mut sender, mut receiver) = connect_to_chat_server(server_url, jwt_token, room).await?;
+    // Connect to the WebSocket server
+    let url = Url::parse(&ws_url)?;
+    let (ws_stream, _) = connect_async(url).await?;
+    let (mut sender, mut receiver) = ws_stream.split();
     
-    println!("Connected! You can start sending messages. Type 'quit' to exit.");
+    println!("Connected to room '{}'! You can start sending messages. Type 'quit' to exit.", room);
     
     // Spawn a task to listen for incoming messages
     let recv_handle = tokio::spawn(async move {
@@ -51,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         
         if !input.is_empty() {
-            if let Err(e) = send_message(&mut sender, input).await {
+            if let Err(e) = sender.send(TungsteniteMessage::Text(input.to_string())).await {
                 eprintln!("Failed to send message: {}", e);
                 break;
             }
